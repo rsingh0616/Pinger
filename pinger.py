@@ -53,7 +53,7 @@ def receiveOnePing(mySocket, ID, timeout, destAddr):
 
         types, code, checksum, packetID, sequence = struct.unpack("bbHHh", icmpHeader)
 
-        if types != 8 and packetID == ID:
+        if packetID == ID:
             bytes = struct.calcsize("d")
             timeSent = struct.unpack("d", recPacket[28:28+bytes])[0]
             return timeReceived - timeSent
@@ -121,7 +121,7 @@ def ping(host, timeout=1):
 
     for i in range(0, 4):  # Four pings will be sent (loop runs for i=0, 1, 2, 3)
         delay, statistics = doOnePing(dest, timeout)  # what is stored into delay and statistics?
-        response = response.append({"bytes": 32, "rtt": delay, "ttl": statistics}, ignore_index=True) # store your bytes, rtt, and ttle here in your response pandas dataframe. An example is commented out below for vars
+        response = response.append({"bytes": len(delay), "rtt": round(float(statistics[2]), 2), "ttl": ord(statistics[1][0])}, ignore_index=True) # store your bytes, rtt, and ttle here in your response pandas dataframe. An example is commented out below for vars
         print(delay)
         delays.append(delay)
         time.sleep(1)  # wait one second
@@ -130,7 +130,7 @@ def ping(host, timeout=1):
     packet_recv = 0
     # fill in start. UPDATE THE QUESTION MARKS
     for index, row in response.iterrows():
-        if row["rtt"] == "Request timed out":  # access your response df to determine if you received a packet or not
+        if row["rtt"] == 0:  # access your response df to determine if you received a packet or not
             packet_lost += 1 # ????
         else:
             packet_recv += 1 # ????
@@ -138,13 +138,9 @@ def ping(host, timeout=1):
 
     # You should have the values of delay for each ping here structured in a pandas dataframe;
     # fill in calculation for packet_min, packet_avg, packet_max, and stdev
-    packet_min = round(min(delays), 2)
-    packet_avg = round(statistics.mean(delays), 2)
-    packet_max = round(max(delays), 2)
-    stddev = round(statistics.stddev(delays), 2)
     vars = pd.DataFrame(columns=['min', 'avg', 'max', 'stddev'])
-    vars = vars.append({'min': str(packet_min), 'avg': str(packet_avg),
-                        'max': str(packet_max), 'stddev': str(stddev)},
+    vars = vars.append({'min': str(round(response['rtt'].min(), 2)), 'avg': str(round(response['rtt'].mean(), 2)),
+                        'max': str(round(response['rtt'].max(), 2)), 'stddev': str(round(response['rtt'].std(), 2))},
                        ignore_index=True)
     print(vars)  # make sure your vars data you are returning resembles acceptance criteria
     return vars
